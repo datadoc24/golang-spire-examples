@@ -1,0 +1,87 @@
+#deployment for the client workload
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spire-https-client
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spire-https-client
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spire-https-client
+    spec:
+      containers:
+      - name: spire-client
+        image: abesharphpe/go-spiffe-https-example:latest
+        env:
+        - name: SOCKET_PATH # full path to worload api socket in pod (see volume mount below)
+          value: "unix:///spiffe-workload-api/agent.sock"
+        - name: SERVER_URL # the kubernetes service URL for the server workload
+          value: "https://spire-https-svc:8443"
+        - name: SERVER_SPIFFE_ID
+          value: "spiffe://example.org/webserver" # the client will refuse to talk to the server
+        command: ["/root/client"]                 # if the server doesn't present this identity
+        volumeMounts:
+        - name: spiffe-workload-api
+          mountPath: /spiffe-workload-api         # path to the workload API socket, as mounted in the pod
+          readOnly: true
+      volumes:
+      - name: spiffe-workload-api
+        csi:
+          driver: "csi.spiffe.io"
+          readOnly: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spire-https-server
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spire-https-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: spire-https-server
+    spec:
+      containers:
+      - name: spire-https-server
+        image: abesharphpe/go-spiffe-https-example:latest
+        env:
+        - name: SOCKET_PATH # full path to worload api socket in pod (see volume mount below)
+          value: "unix:///spiffe-workload-api/agent.sock"
+        - name: CLIENT_SPIFFE_ID
+          value: "spiffe://example.org/webclient" # the server will reject connections from the client
+        command: ["/root/server"]                 # if the client doesn't verifiably present this identity
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - name: spiffe-workload-api
+          mountPath: /spiffe-workload-api
+          readOnly: true
+      volumes:
+      - name: spiffe-workload-api
+        csi:
+          driver: "csi.spiffe.io"
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spire-https-svc
+spec:
+  ports:
+  - name: http-spirehttps
+    port: 8443
+    targetPort: 8443
+  selector:
+    app: spire-https-server
+  type: ClusterIP
