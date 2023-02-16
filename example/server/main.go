@@ -36,23 +36,6 @@ func run(ctx context.Context) error {
 		_, _ = io.WriteString(w, "Top secret sensitive data from server workload!!!")
 	})
 
-        log.Print("Requesting my SVID..")
-        //Note that this step is not a prerequisite for using the workloadapi.NewX509Source function
-        //We are only doing it for the purpose of getting and displaying the SVID contents
-
-        svid, err := workloadapi.FetchX509SVID(ctx,workloadapi.WithAddr(socketPath))
-        if err != nil {
-                log.Printf("unable to retrieve svid: %w", err)
-        } else {
-
-            pem, _, err := svid.Marshal()
-            if err != nil {
-              log.Printf("Unable to marshal X.509 SVID: %v", err)
-            }
-
-            log.Printf("Received SVID with ID %q: \n%s\n", svid.ID, string(pem))
-        }
-
 
 	// Create a `workloadapi.X509Source`, it will connect to Workload API using provided socket.
 	// If socket path is not defined using `workloadapi.SourceOption`, value from environment variable `SPIFFE_ENDPOINT_SOCKET` is used.
@@ -62,9 +45,21 @@ func run(ctx context.Context) error {
 	}
 	defer source.Close()
 
+        //display the svid id and pem file of the source that we got from the workload api
+        svid, err := source.GetX509SVID()
+
+        if err != nil {
+             log.Printf("Unable to retrieve X.509: %w", err)
+        } else {
+           pem, _, err := svid.Marshal()
+            if err != nil {
+              log.Printf("Unable to marshal X.509 SVID: %v", err)
+            }
+            log.Printf("Received X.509 SVID with ID %q: \n%s\n", svid.ID, string(pem))
+        }
+
 	// Allowed SPIFFE ID
 	clientID := spiffeid.RequireFromString(clientSpiffeID)
-        
         log.Println("Server listening for connections from", clientSpiffeID)
 
 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has expected SPIFFE ID

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: spire-client
-        image: abesharphpe/go-spiffe-https-example:latest
+        image: abesharphpe/go-spiffe-https-example:v0.7
         env:
         - name: SOCKET_PATH # full path to worload api socket in pod (see volume mount below)
           value: "unix:///spiffe-workload-api/agent.sock"
@@ -54,7 +54,7 @@ spec:
     spec:
       containers:
       - name: spire-https-server
-        image: abesharphpe/go-spiffe-https-example:latest
+        image: abesharphpe/go-spiffe-https-example:v0.7
         env:
         - name: SOCKET_PATH # full path to worload api socket in pod (see volume mount below)
           value: "unix:///spiffe-workload-api/agent.sock"
