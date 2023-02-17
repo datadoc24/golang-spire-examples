@@ -85,6 +85,6 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("unable to read body: %w", err)
 	}
 
-	log.Printf("%s", body)
+	log.Printf("Received data from server: '%s'", body)
 	return nil
 }

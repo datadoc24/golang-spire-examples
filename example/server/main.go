@@ -14,12 +14,13 @@ import (
 )
 
 // SPIFFE ID to allow requests from
-var clientSpiffeID,socketPath string
+var clientSpiffeID,socketPath,dataToSend string
 
 func main() {
 
         clientSpiffeID = os.Getenv("CLIENT_SPIFFE_ID")
         socketPath = os.Getenv("SOCKET_PATH")
+        dataToSend = os.Getenv("DATA_TO_SEND")
 
 	if err := run(context.Background()); err != nil {
 		log.Println(err)
@@ -32,8 +33,8 @@ func run(ctx context.Context) error {
 
 	// Set up a `/` resource handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Request received")
-		_, _ = io.WriteString(w, "Top secret sensitive data from server workload!!!")
+		log.Printf("Request received, sending '%s'", dataToSend)
+		_, _ = io.WriteString(w, dataToSend)
 	})
 
 
